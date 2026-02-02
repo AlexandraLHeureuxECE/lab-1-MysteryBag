@@ -4,81 +4,144 @@
   <meta charset="UTF-8" />
   <title>Tic-Tac-Toe</title>
   <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --cell: #1f2933;
+      --border: #374151;
+      --accent: #38bdf8;
+      --x: #22c55e;
+      --o: #f97316;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #020617, #0f172a);
       display: flex;
-      flex-direction: column;
       align-items: center;
-      margin-top: 40px;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+    }
+
+    .game {
+      background: var(--card);
+      padding: 24px 28px 28px;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      width: 340px;
+      text-align: center;
     }
 
     h1 {
-      margin-bottom: 10px;
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+      letter-spacing: 0.5px;
     }
 
     #status {
-      margin-bottom: 15px;
-      font-size: 1.2em;
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 18px;
     }
 
     .board {
       display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-template-rows: repeat(3, 100px);
-      gap: 5px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
     .cell {
-      background: white;
-      border: 2px solid #333;
-      font-size: 2.5em;
+      aspect-ratio: 1 / 1;
+      background: var(--cell);
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      font-size: 2.6rem;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
       user-select: none;
     }
 
     .cell:hover {
-      background: #eee;
+      background: #273244;
+    }
+
+    .cell.selected {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .cell.disabled {
       cursor: default;
-      background: #fafafa;
     }
 
-    .cell.selected {
-      outline: 4px solid #007bff;
+    .cell.x {
+      color: var(--x);
+    }
+
+    .cell.o {
+      color: var(--o);
     }
 
     button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 1em;
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      border: 2px solid var(--accent);
+      border-radius: 10px;
+      color: var(--accent);
+      font-size: 0.95rem;
       cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    button:hover {
+      background: var(--accent);
+      color: #020617;
+    }
+
+    .hint {
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: var(--muted);
     }
   </style>
 </head>
 <body>
 
-  <h1>Tic-Tac-Toe</h1>
-  <div id="status">Player X's turn</div>
+  <div class="game">
+    <h1>Tic-Tac-Toe</h1>
+    <div id="status">Player X's turn</div>
 
-  <div class="board" id="board">
-    <div class="cell" data-index="0"></div>
-    <div class="cell" data-index="1"></div>
-    <div class="cell" data-index="2"></div>
-    <div class="cell" data-index="3"></div>
-    <div class="cell" data-index="4"></div>
-    <div class="cell" data-index="5"></div>
-    <div class="cell" data-index="6"></div>
-    <div class="cell" data-index="7"></div>
-    <div class="cell" data-index="8"></div>
+    <div class="board">
+      <div class="cell" data-index="0"></div>
+      <div class="cell" data-index="1"></div>
+      <div class="cell" data-index="2"></div>
+      <div class="cell" data-index="3"></div>
+      <div class="cell" data-index="4"></div>
+      <div class="cell" data-index="5"></div>
+      <div class="cell" data-index="6"></div>
+      <div class="cell" data-index="7"></div>
+      <div class="cell" data-index="8"></div>
+    </div>
+
+    <button id="restart">Restart Game</button>
+
+    <div class="hint">
+      Arrow keys to move · Space to place
+    </div>
   </div>
-
-  <button id="restart">Restart Game</button>
 
   <script>
     const cells = document.querySelectorAll(".cell");
@@ -90,31 +153,34 @@
     let gameActive = true;
     let selectedIndex = 0;
 
-    const winPatterns = [
-      [0,1,2], [3,4,5], [6,7,8],
-      [0,3,6], [1,4,7], [2,5,8],
-      [0,4,8], [2,4,6]
+    const wins = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
     ];
 
     function updateSelection() {
-      cells.forEach(cell => cell.classList.remove("selected"));
+      cells.forEach(c => c.classList.remove("selected"));
       cells[selectedIndex].classList.add("selected");
     }
 
-    function placeMark(index) {
+    function place(index) {
       if (!gameActive || board[index]) return;
 
       board[index] = currentPlayer;
       cells[index].textContent = currentPlayer;
-      cells[index].classList.add("disabled");
+      cells[index].classList.add(
+        "disabled",
+        currentPlayer === "X" ? "x" : "o"
+      );
 
-      if (checkWinner()) {
+      if (wins.some(w => w.every(i => board[i] === currentPlayer))) {
         statusText.textContent = `Player ${currentPlayer} wins!`;
         gameActive = false;
         return;
       }
 
-      if (board.every(cell => cell !== null)) {
+      if (board.every(v => v !== null)) {
         statusText.textContent = "It's a draw!";
         gameActive = false;
         return;
@@ -124,15 +190,7 @@
       statusText.textContent = `Player ${currentPlayer}'s turn`;
     }
 
-    function checkWinner() {
-      return winPatterns.some(pattern =>
-        pattern.every(i => board[i] === currentPlayer)
-      );
-    }
-
-    function handleKeyDown(e) {
-      if (!gameActive && e.code !== "Space") return;
-
+    document.addEventListener("keydown", e => {
       switch (e.key) {
         case "ArrowUp":
           selectedIndex = (selectedIndex + 6) % 9;
@@ -147,42 +205,37 @@
           selectedIndex = (selectedIndex + 1) % 9;
           break;
         case " ":
-        case "Spacebar":
           e.preventDefault();
-          placeMark(selectedIndex);
+          place(selectedIndex);
           break;
         default:
           return;
       }
-
       updateSelection();
-    }
-
-    function restartGame() {
-      board.fill(null);
-      currentPlayer = "X";
-      gameActive = true;
-      selectedIndex = 0;
-      statusText.textContent = "Player X's turn";
-
-      cells.forEach(cell => {
-        cell.textContent = "";
-        cell.classList.remove("disabled", "selected");
-      });
-
-      updateSelection();
-    }
+    });
 
     cells.forEach(cell => {
       cell.addEventListener("click", () => {
         selectedIndex = Number(cell.dataset.index);
-        placeMark(selectedIndex);
+        place(selectedIndex);
         updateSelection();
       });
     });
 
-    document.addEventListener("keydown", handleKeyDown);
-    restartBtn.addEventListener("click", restartGame);
+    restartBtn.addEventListener("click", () => {
+      board.fill(null);
+      gameActive = true;
+      currentPlayer = "X";
+      selectedIndex = 0;
+      statusText.textContent = "Player X's turn";
+
+      cells.forEach(c => {
+        c.textContent = "";
+        c.className = "cell";
+      });
+
+      updateSelection();
+    });
 
     updateSelection();
   </script>
