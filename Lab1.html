@@ -49,6 +49,10 @@
       background: #fafafa;
     }
 
+    .cell.selected {
+      outline: 4px solid #007bff;
+    }
+
     button {
       margin-top: 20px;
       padding: 10px 20px;
@@ -84,6 +88,7 @@
     let board = Array(9).fill(null);
     let currentPlayer = "X";
     let gameActive = true;
+    let selectedIndex = 0;
 
     const winPatterns = [
       [0,1,2], [3,4,5], [6,7,8],
@@ -91,14 +96,17 @@
       [0,4,8], [2,4,6]
     ];
 
-    function handleCellClick(e) {
-      const index = e.target.dataset.index;
+    function updateSelection() {
+      cells.forEach(cell => cell.classList.remove("selected"));
+      cells[selectedIndex].classList.add("selected");
+    }
 
+    function placeMark(index) {
       if (!gameActive || board[index]) return;
 
       board[index] = currentPlayer;
-      e.target.textContent = currentPlayer;
-      e.target.classList.add("disabled");
+      cells[index].textContent = currentPlayer;
+      cells[index].classList.add("disabled");
 
       if (checkWinner()) {
         statusText.textContent = `Player ${currentPlayer} wins!`;
@@ -117,25 +125,66 @@
     }
 
     function checkWinner() {
-      return winPatterns.some(pattern => {
-        return pattern.every(index => board[index] === currentPlayer);
-      });
+      return winPatterns.some(pattern =>
+        pattern.every(i => board[i] === currentPlayer)
+      );
+    }
+
+    function handleKeyDown(e) {
+      if (!gameActive && e.code !== "Space") return;
+
+      switch (e.key) {
+        case "ArrowUp":
+          selectedIndex = (selectedIndex + 6) % 9;
+          break;
+        case "ArrowDown":
+          selectedIndex = (selectedIndex + 3) % 9;
+          break;
+        case "ArrowLeft":
+          selectedIndex = (selectedIndex + 8) % 9;
+          break;
+        case "ArrowRight":
+          selectedIndex = (selectedIndex + 1) % 9;
+          break;
+        case " ":
+        case "Spacebar":
+          e.preventDefault();
+          placeMark(selectedIndex);
+          break;
+        default:
+          return;
+      }
+
+      updateSelection();
     }
 
     function restartGame() {
       board.fill(null);
       currentPlayer = "X";
       gameActive = true;
+      selectedIndex = 0;
       statusText.textContent = "Player X's turn";
 
       cells.forEach(cell => {
         cell.textContent = "";
-        cell.classList.remove("disabled");
+        cell.classList.remove("disabled", "selected");
       });
+
+      updateSelection();
     }
 
-    cells.forEach(cell => cell.addEventListener("click", handleCellClick));
+    cells.forEach(cell => {
+      cell.addEventListener("click", () => {
+        selectedIndex = Number(cell.dataset.index);
+        placeMark(selectedIndex);
+        updateSelection();
+      });
+    });
+
+    document.addEventListener("keydown", handleKeyDown);
     restartBtn.addEventListener("click", restartGame);
+
+    updateSelection();
   </script>
 
 </body>
